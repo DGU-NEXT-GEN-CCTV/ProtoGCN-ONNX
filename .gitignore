@@ -131,6 +131,6 @@ dmypy.json
 *.onnx
 /work_dirs
 
-configs/selfharm/
+configs/selfharm
 checkpoints/*.pth
-onnx_models/protogcn_selfharm/
+onnx_models/protogcn_selfharm
