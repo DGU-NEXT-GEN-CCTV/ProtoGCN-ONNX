@@ -82,9 +82,7 @@ class RecognizerGCN(BaseRecognizer):
         """Defines the computation performed at every call when inference."""
         x, _ = self.extract_feat(keypoint) 
         cls_score = self.cls_head(x)
-        print(cls_score)
         cls_score = torch.nn.functional.softmax(cls_score, dim=1)
-        print(cls_score)
         return cls_score
 
     def forward(self, keypoint, label=None, return_loss=True, **kwargs):

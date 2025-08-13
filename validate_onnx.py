@@ -45,9 +45,10 @@ def valid_onnx_model(provider, model_path):
 
 if __name__ == "__main__":
     # CPU와 GPU에서 각각 ONNX 모델을 검증합니다.
-    model_path = 'model.onnx'
-    print("[Validating ONNX model on CPU]\n")
-    valid_onnx_model("CPUExecutionProvider", model_path)
+    MODEL_PATH = 'onnx_models/protogcn_selfharm/1/model.onnx'
+    
+    # CPU에서 모델 검증
+    valid_onnx_model("CPUExecutionProvider", MODEL_PATH)
 
-    print("[Validating ONNX model on GPU]\n")
-    valid_onnx_model("CUDAExecutionProvider", model_path)
+    # GPU에서 모델 검증
+    valid_onnx_model("CUDAExecutionProvider", MODEL_PATH)

@@ -1,92 +1,106 @@
-# ProtoGCN
+# ProtoGCN-ONNX
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/revealing-key-details-to-see-differences-a/skeleton-based-action-recognition-on-ntu-rgbd-1)](https://paperswithcode.com/sota/skeleton-based-action-recognition-on-ntu-rgbd-1?p=revealing-key-details-to-see-differences-a)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/revealing-key-details-to-see-differences-a/skeleton-based-action-recognition-on-ntu-rgbd)](https://paperswithcode.com/sota/skeleton-based-action-recognition-on-ntu-rgbd?p=revealing-key-details-to-see-differences-a)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/revealing-key-details-to-see-differences-a/skeleton-based-action-recognition-on-kinetics)](https://paperswithcode.com/sota/skeleton-based-action-recognition-on-kinetics?p=revealing-key-details-to-see-differences-a)
+이 저장소는 학습된 ProtoGCN 모델을 ONNX 파일로 변환하기 위한 코드를 제공합니다.
 
-[![paper](https://img.shields.io/badge/arXiv-Paper-red.svg)](https://arxiv.org/abs/2411.18941) [![models](https://img.shields.io/badge/Link-Models-87CEEB.svg)](https://drive.google.com/drive/folders/1BLtlGlv19nY6QcYsVyOBo7nBr3iw5cFl?usp=sharing) [![video](https://img.shields.io/badge/License-MIT-yellow?style=flat)](/LICENSE) [![Hugging Face](https://img.shields.io/badge/Page-Hugging_Face-6C3483?style=flat)](https://huggingface.co/firework8/ProtoGCN)
+### Note
 
-This is the official PyTorch implementation for "[Revealing Key Details to See Differences: A Novel Prototypical Perspective for Skeleton-based Action Recognition](https://openaccess.thecvf.com/content/CVPR2025/html/Liu_Revealing_Key_Details_to_See_Differences_A_Novel_Prototypical_Perspective_CVPR_2025_paper.html)". The paper is accepted to CVPR 2025.
+모든 테스트는 다음 환경에서 진행되었습니다. 일부 환경에서는 버전 호환성 확인이 필요할 수 있습니다.
 
-### Abstract
-> In skeleton-based action recognition, a key challenge is distinguishing between actions with similar trajectories of joints due to the lack of image-level details in skeletal representations. Recognizing that the differentiation of similar actions relies on subtle motion details in specific body parts, we direct our approach to focus on the fine-grained motion of local skeleton components. To this end, we introduce ProtoGCN, a Graph Convolutional Network (GCN)-based model that breaks down the dynamics of entire skeleton sequences into a combination of learnable prototypes representing core motion patterns of action units. By contrasting the reconstruction of prototypes, ProtoGCN can effectively identify and enhance the discriminative representation of similar actions. Without bells and whistles, ProtoGCN achieves state-of-the-art performance on multiple benchmark datasets, including NTU RGB+D, NTU RGB+D 120, Kinetics-Skeleton, and FineGYM, which demonstrates the effectiveness of the proposed method.
+    CPU: Intel(R) Core(TM) i9-13900KF
+    GPU: Nvidia GeForce RTX 4090, CUDA 12.1
+    OS: Ubuntu 24.04 LTS
+    Conda: 25.5.1
 
 ## Installation
 
-```shell
-git clone https://github.com/firework8/ProtoGCN.git
-cd ProtoGCN
-conda env create -f protogcn.yaml
-conda activate protogcn
+이 저장소에서 제공하는 모듈을 실행하기 위해 Conda 기반 환경을 구성합니다.
+
+만약, Conda가 설치되어 있지 않다면 아래 링크에 접속하여 설치 후 단계를 진행합니다.
+
+[🔗 아나콘다 다운로드](https://www.anaconda.com/download/success) 또는 [🔗 미니콘다 다운로드](https://www.anaconda.com/docs/getting-started/miniconda/main)
+
+**Step 1**. 저장소 복제
+
+```bash
+git clone https://github.com/DGU-NEXT-GEN-CCTV/ProtoGCN-ONNX
+cd ProtoGCN-ONNX
+
+```
+
+**Step 2**. Conda 가상환경 생성 및 활성화
+
+```bash
+conda env create -f protogcn-onnx.yaml
+conda activate protogcn-onnx
+```
+
+**Step 3**. 라이브러리 설치
+
+```bash
 pip install -e .
 ```
 
-## Data Preparation
+## Preparation
 
-PYSKL provides links to the pre-processed skeleton pickle annotations.
+> 변환 과정을 진행하기위해 사전 학습된 ProtoGCN의 설정 및 가중치가 필요합니다.
 
-- NTU RGB+D: [NTU RGB+D Download Link](https://download.openmmlab.com/mmaction/pyskl/data/nturgbd/ntu60_3danno.pkl)
-- NTU RGB+D 120: [NTU RGB+D 120 Download Link](https://download.openmmlab.com/mmaction/pyskl/data/nturgbd/ntu120_3danno.pkl)
-- Kinetics-Skeleton: [Kinetics-Skeleton Download Link](https://download.openmmlab.com/mmaction/pyskl/data/k400/k400_hrnet.pkl)
-- FineGYM: [FineGYM Download Link](https://download.openmmlab.com/mmaction/pyskl/data/gym/gym_hrnet.pkl)
+**설정 파일 경로**: `{repository_root}/configs/{dataset}/{method}.py`
 
+**가중치 파일 경로**: `{repository_root}/checkpoints/{checkpoint}.pth`
 
-For Kinetics-Skeleton, since the skeleton annotations are large, please use the [Kinetics Annotation Link](https://www.dropbox.com/scl/fi/5phx0m7bok6jkphm724zc/kpfiles.zip?rlkey=sz26ljvlxb6gwqj5m9jvynpg8&st=47vcw2xb&dl=0) to download the `kpfiles` and extract it under `$ProtoGCN/data/k400` for Kinetics-Skeleton. 
+## Convert
 
-Note that the `kpfiles` needs to be extracted under `Linux`. Additionally, Kinetics-Skeleton requires the dependency `Memcached` to run, which could be referred to [here](https://www.runoob.com/memcached/memcached-install.html). 
+ONNX 파일을 변환하기 위해 convert_to_onnx.py의 91-93번 줄의 값을 사용자의 환경에 맞게 수정합니다.
 
-You could check the official [Data Doc](https://github.com/kennymckormick/pyskl/blob/main/tools/data/README.md) of PYSKL for more detailed instructions.
+```python
+    ...(생략)...
 
-## Training & Testing
+# 추천안
+91  MODEL_NAME = "protogcn_{dataset}"
+92  CONFIG_PATH = 'configs/{dataset}/j.py'
+93  CHECKPOINT_PATH = 'checkpoints/{checkpoint}.pth'
 
-Please change the config file depending on what you want. You could use the following commands for training and testing. Basically, we support distributed training on a single server with multiple GPUs.
-
-```shell
-# Training
-bash tools/dist_train.sh {config_name} {num_gpus} {other_options}
-# For example: train on NTU RGB+D X-Sub (Joint Modality) with 1 GPU, with validation, and test the checkpoint.
-bash tools/dist_train.sh configs/ntu60_xsub/j.py 1 --validate --test-last --test-best
+...(생략)...
 ```
 
-```shell
-# Testing
-bash tools/dist_test.sh {config_name} {checkpoint_file} {num_gpus} {other_options}
-# For example: test on NTU RGB+D X-Sub (Joint Modality) with metrics `top_k_accuracy`, and dump the result to `result.pkl`.
-bash tools/dist_test.sh configs/ntu60_xsub/j.py checkpoints/CHECKPOINT.pth 1 --eval top_k_accuracy --out result.pkl
+ONNX 변환을 위해 아래 명령어를 실행합니다.
+
+```bash
+python convert_to_onnx.py
 ```
 
-```shell
-# Ensemble the results
-cd tools
-python ensemble.py
+변환에 성공했다면 `{repository_root}/onnx_models/{model_name}`이 생성됩니다.
+
+```bash
+.
+└── onnx_models # ······················· 오닉스 모델 디렉토리
+    └── {model_name} # ·················· 변환된 오닉스 모델
+        ├── 1 # ························· 버전 디렉토리 (기본값 1)
+        │   └── model.onnx # ············ 1 버전 ONNX 모델
+        └── config.pbtxt # ·············· ONNX 모델 입/출력 설정 파일
 ```
 
-## Pretrained Models
+## Validate
 
-All the checkpoints can be downloaded from [here](https://drive.google.com/drive/folders/1BLtlGlv19nY6QcYsVyOBo7nBr3iw5cFl?usp=sharing).
+변환된 ONNX 모델의 유효성을 평가하기 위해 validate_onnx.py의 48번 줄 값을 사용자의 환경에 맞게 수정합니다.
 
-For the detailed performance of pretrained models, please go to the [Model Doc](/data/README.md).
+```python
+    ...(생략)...
 
-## Acknowledgements
+48  MODEL_PATH = 'onnx_models/{model_name}/1/model.onnx'
 
-This repo is mainly based on [PYSKL](https://github.com/kennymckormick/pyskl). We also refer to [MS-G3D](https://github.com/kenziyuliu/ms-g3d), [CTR-GCN](https://github.com/Uason-Chen/CTR-GCN), and [FR-Head](https://github.com/zhysora/FR-Head).
-
-Thanks to the original authors for their excellent work!
-
-## Citation
-
-If you find ProtoGCN useful in your research, please consider citing our paper:
-
+    ...(생략)...
 ```
-@inproceedings{liu2025revealing,
-  title={Revealing key details to see differences: A novel prototypical perspective for skeleton-based action recognition},
-  author={Liu, Hongda and Liu, Yunfan and Ren, Min and Wang, Hao and Wang, Yunlong and Sun, Zhenan},
-  booktitle={Proceedings of the Computer Vision and Pattern Recognition Conference},
-  pages={29248--29257},
-  year={2025}
-}
+유효성을 평가를 위해 아래 명령어를 실행합니다.
+```bash
+python validate_onnx.py
 ```
 
-## Contact
+유효성 평가는 2단계로 진행되며 첫번째는 CPU 세션에서 추론, 두번째는 GPU 세션에서 추론으로 구성되어 있습니다.
 
-For any questions, feel free to contact: `hongda.liu@cripac.ia.ac.cn`
+다만, 이 지표는 CUDA 등 환경 설정으로 인해 모델에 문제가 없음에도 오류가 발생할 수 있습니다.
+
+> Note. 모델 변환에 심각한 문제가 발생하지 않았다면, 일반적으로 CPU 세션에서 정상적으로 동작합니다.
+
+## ETC.
+

@@ -1,4 +1,4 @@
-name: protogcn
+name: protogcn-onnx
 channels:
   - pytorch
   - conda-forge
