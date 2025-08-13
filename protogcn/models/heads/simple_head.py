@@ -57,7 +57,7 @@ class SimpleHead(BaseHead):
                 x = x.reshape(N, M, C)
                 x = x.mean(dim=1)
 
-        assert x.shape[1] == self.in_c
+        # assert x.shape[1] == self.in_c # ONNX 변환에 불필요
         if self.dropout is not None:
             x = self.dropout(x)
 

@@ -29,18 +29,26 @@ class GCN_Block(nn.Module):
         self.tcn = mstcn(out_channels, out_channels, stride=stride, **tcn_kwargs)
         self.relu = nn.ReLU()
 
+        # Replace lambda functions with proper modules for ONNX compatibility
         if not residual:
-            self.residual = lambda x: 0
+            self.residual = nn.Identity()  # Instead of lambda x: 0
+            self.use_residual = False
         elif (in_channels == out_channels) and (stride == 1):
-            self.residual = lambda x: x
+            self.residual = nn.Identity()  # Instead of lambda x: x
+            self.use_residual = True
         else:
             self.residual = unit_tcn(in_channels, out_channels, kernel_size=1, stride=stride)
+            self.use_residual = True
 
     def forward(self, x, A=None):
         """Defines the computation performed at every call."""
         res = self.residual(x)
+        
         x, gcl_graph = self.gcn(x, A)
-        x = self.tcn(x) + res
+        if hasattr(self, 'use_residual') and not self.use_residual:
+            x = self.tcn(x)
+        else:
+            x = self.tcn(x) + res
         return self.relu(x), gcl_graph
 
 

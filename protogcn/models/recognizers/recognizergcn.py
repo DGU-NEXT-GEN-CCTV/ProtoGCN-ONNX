@@ -30,6 +30,10 @@ class RecognizerGCN(BaseRecognizer):
         assert self.with_cls_head or self.feat_ext
         bs, nc = keypoint.shape[:2]
         keypoint = keypoint.reshape((bs * nc, ) + keypoint.shape[2:])
+        
+        keypoint_np = keypoint.detach().cpu().numpy()
+        np.save('test_keypoint.npy', keypoint_np)
+        exit()
 
         x, get_graph = self.extract_feat(keypoint)
         feat_ext = self.test_cfg.get('feat_ext', False)
@@ -66,7 +70,7 @@ class RecognizerGCN(BaseRecognizer):
         cls_score = cls_score.reshape(bs, nc, cls_score.shape[-1])
         if 'average_clips' not in self.test_cfg:
             self.test_cfg['average_clips'] = 'prob'
-
+            
         cls_score = self.average_clip(cls_score)
         if isinstance(cls_score, tuple) or isinstance(cls_score, list):
             cls_score = [x.data.cpu().numpy() for x in cls_score]
@@ -74,22 +78,23 @@ class RecognizerGCN(BaseRecognizer):
 
         return cls_score.data.cpu().numpy()
 
+    def forward_inference(self, keypoint, **kwargs):
+        """Defines the computation performed at every call when inference."""
+        x, _ = self.extract_feat(keypoint) 
+        cls_score = self.cls_head(x)
+        print(cls_score)
+        cls_score = torch.nn.functional.softmax(cls_score, dim=1)
+        print(cls_score)
+        return cls_score
+
     def forward(self, keypoint, label=None, return_loss=True, **kwargs):
         """Define the computation performed at every call."""
+        if label is None:
+            return self.forward_inference(keypoint)
         if return_loss:
-            if label is None:
-                raise ValueError('Label should not be None.')
             return self.forward_train(keypoint, label, **kwargs)
 
         return self.forward_test(keypoint, **kwargs)
-    
-    def forward_inference(self, keypoint, **kwargs):
-        """Defines the computation performed at every call when inference."""
-        x, get_graph = self.extract_feat(keypoint) 
-        cls_score = self.cls_head(x)
-        cls_score = torch.nn.functional.softmax(cls_score, dim=1)
-        return cls_score
 
     def extract_feat(self, keypoint):
-
         return self.backbone(keypoint)

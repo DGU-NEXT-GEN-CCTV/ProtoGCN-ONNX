@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.onnx
 from mmcv import Config
@@ -21,7 +22,7 @@ class Wrapper(torch.nn.Module):
         self.model = model
 
     def forward(self, keypoint, label=None, return_loss=True, **kwargs):
-        return self.model.forward_inference(keypoint)
+        return self.model.forward_inference(keypoint, **kwargs)
 
 wrapped_model = Wrapper(model)
 
@@ -35,7 +36,8 @@ wrapped_model = Wrapper(model)
 # V: 키포인트 수(기본값 17)
 # C: 채널 수(x,y,confidence)
 # -------------------------
-dummy_input = torch.randn(1, 1, 100, 20, 3)
+# dummy_input = torch.randn(1, 1, 100, 20, 3)
+dummy_input = torch.tensor(np.load('data/selfharm/test_keypoint.npy'))
 
 # 3. ONNX로 변환합니다.
 torch.onnx.export(
