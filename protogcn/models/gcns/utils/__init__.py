@@ -1,12 +1,8 @@
-from .gcn import unit_gcn
-from .init_func import bn_init, conv_branch_init, conv_init
-from .tcn import unit_tcn, mstcn
+# protogcn/models/gcns/utils/__init__.py
+
+from .gcn import GCN_Block, unit_gcn
+from .tcn import mstcn, unit_tcn
 
 __all__ = [
-    # GCN Modules
-    'unit_gcn',
-    # Init functions
-    'bn_init', 'conv_branch_init', 'conv_init', 
-    # TCN Modules
-    'unit_tcn', 'mstcn'
+    'GCN_Block', 'unit_gcn', 'mstcn', 'unit_tcn'
 ]
