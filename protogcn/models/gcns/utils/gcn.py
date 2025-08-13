@@ -60,7 +60,6 @@ class unit_gcn(nn.Module):
     def forward(self, x):
         n, c, t, v = x.shape
         res = self.down(x)
-        
         A = self.A
         A = A[None, :, None, None]
         
@@ -74,6 +73,7 @@ class unit_gcn(nn.Module):
         x2 = x2.mean(dim=-2, keepdim=True)
         
         diff = x1.unsqueeze(-1) - x2.unsqueeze(-2)
+        # getattr 대신 명시적인 if/else 사용
         if self.inter_act == 'tanh':
             inter_graph = self.tanh(diff)
         elif self.inter_act == 'softmax':
@@ -85,6 +85,7 @@ class unit_gcn(nn.Module):
         A = inter_graph + A
         
         intra_graph = torch.einsum('nkctv,nkctw->nktvw', x1, x2)[:, :, None]
+        # getattr 대신 명시적인 if/else 사용
         if self.intra_act == 'softmax':
             intra_graph = self.softmax(intra_graph)
         elif self.intra_act == 'sigmoid':
@@ -96,11 +97,9 @@ class unit_gcn(nn.Module):
         A = intra_graph + A
         
         A = A.squeeze(3)
-        
-        x = torch.matmul(pre_x, A)
-        x = x.contiguous()
-        
+        x = torch.matmul(pre_x, A).contiguous()
         x = x.reshape(n, -1, t, v).contiguous()
         x = self.post(x)
         
+        # 최종 출력 (단일 텐서만 반환)
         return self.act(self.bn(x) + res)

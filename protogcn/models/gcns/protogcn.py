@@ -11,25 +11,38 @@ EPS = 1e-4
 
 
 class GCN_Block(nn.Module):
-
+    """
+    GCN Block for ST-GCN models.
+    
+    [추론 전용으로 수정된 최종 버전]
+    - __init__이 **kwargs를 받도록 수정되었습니다.
+    - forward 함수는 단일 텐서만 입출력합니다.
+    """
     def __init__(self, in_channels, out_channels, A, stride=1, residual=True, **kwargs):
         super().__init__()
-        # ... (기존 __init__ 코드는 그대로 사용) ...
+        
+        # 'act', 'norm'과 같은 공통 인자를 gcn과 tcn 양쪽에 전달하기 위한 로직
         common_args = ['act', 'norm', 'g1x1']
         for arg in common_args:
             if arg in kwargs:
                 value = kwargs.pop(arg)
                 kwargs['tcn_' + arg] = value
                 kwargs['gcn_' + arg] = value
-        gcn_kwargs = {k[4:]: v for k, v in kwargs.items() if k[:4] == 'gcn_'}
-        tcn_kwargs = {k[4:]: v for k, v in kwargs.items() if k[:4] == 'tcn_'}
-        kwargs = {k: v for k, v in kwargs.items() if k[1:4] != 'cn_'}
-        assert len(kwargs) == 0
+        
+        # 각 모듈에 맞는 kwargs만 필터링
+        gcn_kwargs = {k[4:]: v for k, v in kwargs.items() if k.startswith('gcn_')}
+        tcn_kwargs = {k[4:]: v for k, v in kwargs.items() if k.startswith('tcn_')}
+        
+        # 남은 kwargs가 없는지 확인
+        remaining_kwargs = {k: v for k, v in kwargs.items() if not (k.startswith('tcn_') or k.startswith('gcn_'))}
+        assert len(remaining_kwargs) == 0, f"Unexpected kwargs found in GCN_Block: {remaining_kwargs.keys()}"
 
+        # 핵심 모듈 정의
         self.gcn = unit_gcn(in_channels, out_channels, A, **gcn_kwargs)
         self.tcn = mstcn(out_channels, out_channels, stride=stride, **tcn_kwargs)
         self.relu = nn.ReLU()
 
+        # Residual connection 설정
         if not residual:
             self.residual = lambda x: 0
         elif (in_channels == out_channels) and (stride == 1):
@@ -38,10 +51,19 @@ class GCN_Block(nn.Module):
             self.residual = unit_tcn(in_channels, out_channels, kernel_size=1, stride=stride)
 
     def forward(self, x):
+        """
+        [추론 전용 forward]
+        - 입력: x (텐서)
+        - 출력: relu(x) (텐서)
+        """
         res = self.residual(x)
+        
         # unit_gcn이 단일 텐서만 반환하므로, x만 받도록 수정
         x = self.gcn(x)
+        
         x = self.tcn(x) + res
+        
+        # 최종적으로 단일 텐서만 반환
         return self.relu(x)
 
 
@@ -149,18 +171,19 @@ class ProtoGCN(nn.Module):
     def forward(self, x):
         N, M, T, V, C = x.size()
         x = x.permute(0, 1, 3, 4, 2).contiguous()
-        
-        # 'VC' 타입의 데이터 BN만 남기고 if문을 제거
         x = self.data_bn(x.view(N * M, V * C, T))
         x = x.view(N, M, V, C, T).permute(0, 1, 3, 4, 2).contiguous().view(N * M, C, T, V)
 
-        # GCN 블록을 순차적으로 통과
+        # GCN 블록을 순차적으로 통과시킵니다.
+        # GCN_Block이 이제 단일 텐서만 반환하므로, x만 받습니다.
         for i in range(self.num_stages):
             x = self.gcn[i](x)
         
-        # 최종 특징(feature) 텐서의 shape을 원복
+        # 최종 특징(feature) 텐서의 shape을 원복합니다.
         x = x.reshape((N, M) + x.shape[1:])
         
-        # 보조 출력(reconstructed_graph) 관련 로직은 모두 제거
+        # 'get_graph' 및 'reconstructed_graph' 관련 로직은
+        # 추론에 필요 없으므로 모두 삭제되었습니다.
         
+        # 최종 특징(feature) 텐서 'x'만 반환합니다.
         return x

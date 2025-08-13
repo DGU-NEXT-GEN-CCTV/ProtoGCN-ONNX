@@ -10,8 +10,7 @@ from .base import *
 
 
 @HEADS.register_module()
-class SimpleHead(BaseHead): # BaseHead가 정의되어 있다고 가정합니다.
-
+class SimpleHead(BaseHead):
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -31,21 +30,23 @@ class SimpleHead(BaseHead): # BaseHead가 정의되어 있다고 가정합니다
         
         # forward에서 동적으로 생성하지 않도록 __init__에서 미리 정의
         self.pool = nn.AdaptiveAvgPool2d(1)
-
+        
     def init_weights(self):
         normal_init(self.fc_cls, std=self.init_std)
 
     def forward(self, x):
-        # GCN 백본의 출력은 5D 텐서 (N, M, C, T, V)
-        # if문 없이 GCN 출력을 처리하는 단일 경로만 남김
+        # ProtoGCN 백본의 출력은 5D 텐서 (N, M, C, T, V) 입니다.
+        # 따라서 if문 없이 GCN 출력을 처리하는 로직만 남깁니다.
         N, M, C, T, V = x.shape
         x = x.reshape(N * M, C, T, V)
 
+        # 미리 정의된 self.pool 사용
         x = self.pool(x)
+
         x = x.reshape(N, M, C)
         x = x.mean(dim=1)
 
-        # Dropout은 model.eval() 모드에서 자동으로 비활성화됨
+        # Dropout은 model.eval() 모드에서 자동으로 비활성화됩니다.
         if self.dropout is not None:
             x = self.dropout(x)
 
