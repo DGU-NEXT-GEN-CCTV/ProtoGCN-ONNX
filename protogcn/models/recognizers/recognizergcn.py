@@ -27,13 +27,11 @@ class RecognizerGCN(BaseRecognizer):
     def forward_test(self, keypoint, **kwargs):
         """Defines the computation performed at every call when evaluation and
         testing."""
-
         assert self.with_cls_head or self.feat_ext
         bs, nc = keypoint.shape[:2]
         keypoint = keypoint.reshape((bs * nc, ) + keypoint.shape[2:])
-        # print(">>> INFERENCE SHAPE:", keypoint.shape) # (1, 1, 100, 20 ,3)
-        x, get_graph = self.extract_feat(keypoint) 
-        # print(">>> X SHAPE:", x.shape) # (1, 1, 384, 25, 20)
+
+        x, get_graph = self.extract_feat(keypoint)
         feat_ext = self.test_cfg.get('feat_ext', False)
         pool_opt = self.test_cfg.get('pool_opt', 'all')
         score_ext = self.test_cfg.get('score_ext', False)
@@ -63,7 +61,7 @@ class RecognizerGCN(BaseRecognizer):
                     x = x + b[..., None, None]
                 x = x[None]
             return x.data.cpu().numpy().astype(np.float16)
-        # print(">>> HEAD INPUT X SHAPE:", x.shape) # (1, 1, 384, 25, 20)
+
         cls_score = self.cls_head(x)
         cls_score = cls_score.reshape(bs, nc, cls_score.shape[-1])
         if 'average_clips' not in self.test_cfg:
@@ -75,22 +73,23 @@ class RecognizerGCN(BaseRecognizer):
             return [[x[i] for x in cls_score] for i in range(bs)]
 
         return cls_score.data.cpu().numpy()
+
+    def forward(self, keypoint, label=None, return_loss=True, **kwargs):
+        """Define the computation performed at every call."""
+        if return_loss:
+            if label is None:
+                raise ValueError('Label should not be None.')
+            return self.forward_train(keypoint, label, **kwargs)
+
+        return self.forward_test(keypoint, **kwargs)
     
     def forward_inference(self, keypoint, **kwargs):
         """Defines the computation performed at every call when inference."""
-        x = self.extract_feat(keypoint) 
+        x, get_graph = self.extract_feat(keypoint) 
         cls_score = self.cls_head(x)
         cls_score = torch.nn.functional.softmax(cls_score, dim=1)
         return cls_score
 
-    def forward(self, keypoint, label=None, return_loss=True, **kwargs):
-        """Define the computation performed at every call."""
-        # print(">>> INPUT SHAPE:", keypoint.shape)
-        if label is None:
-            return self.forward_inference(keypoint, **kwargs)
-        if return_loss:
-            return self.forward_train(keypoint, label, **kwargs)
-        return self.forward_test(keypoint, **kwargs)
-
     def extract_feat(self, keypoint):
+
         return self.backbone(keypoint)

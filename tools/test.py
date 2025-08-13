@@ -65,8 +65,6 @@ def multi_gpu_test(model: nn.Module,
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, **data) 
-            print(f"normal: {result[0][0]:03f}, selfharm: {result[0][1]:03f}")
-                
             # result, get_graph = model(return_loss=False, **data)
         results.extend(result)
         # save_graph.append(get_graph)
@@ -235,7 +233,6 @@ def main():
 
     dist.barrier()
     outputs = inference_pytorch(args, cfg, data_loader)
-    print(outputs)
 
     rank, _ = get_dist_info()
     if rank == 0:

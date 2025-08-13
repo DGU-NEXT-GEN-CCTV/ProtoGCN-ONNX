@@ -41,18 +41,18 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
         self.backbone = builder.build_backbone(backbone)
         self.cls_head = builder.build_head(cls_head) if cls_head else None
 
-        # if train_cfg is None:
-        #     train_cfg = dict()
-        # if test_cfg is None:
-        #     test_cfg = dict()
+        if train_cfg is None:
+            train_cfg = dict()
+        if test_cfg is None:
+            test_cfg = dict()
 
-        # assert isinstance(train_cfg, dict)
-        # assert isinstance(test_cfg, dict)
+        assert isinstance(train_cfg, dict)
+        assert isinstance(test_cfg, dict)
 
-        # self.train_cfg = train_cfg
-        # self.test_cfg = test_cfg
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
-        # self.max_testing_views = test_cfg.get('max_testing_views', None)
+        self.max_testing_views = test_cfg.get('max_testing_views', None)
         self.init_weights()
 
     @property
@@ -63,8 +63,8 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
     def init_weights(self):
         """Initialize the model network weights."""
         self.backbone.init_weights()
-        # if self.with_cls_head:
-        self.cls_head.init_weights()
+        if self.with_cls_head:
+            self.cls_head.init_weights()
 
     def extract_feat(self, imgs):
         """Extract features through a backbone.
@@ -137,6 +137,7 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
 
         log_vars['loss'] = loss
         for loss_name, loss_value in log_vars.items():
+            # reduce loss when distributed training
             if dist.is_available() and dist.is_initialized():
                 loss_value = loss_value.data.clone()
                 dist.all_reduce(loss_value.div_(dist.get_world_size()))

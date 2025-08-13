@@ -1,2 +1,0 @@
-# bash tools/dist_test.sh {config_name} {checkpoint_file} {num_gpus} {other_options}
-bash tools/dist_test.sh configs/selfharm/j.py checkpoints/protogcn_pytorch_selfharm.pth 1 --eval top_k_accuracy --out result.pkl
